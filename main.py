@@ -1,4 +1,3 @@
-import kivy
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.app import App
@@ -6,16 +5,11 @@ from kivy.config import Config
 from kivy.uix.image import Image
 from kivy.properties import NumericProperty
 from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.animation import Animation
 from random import sample
 from random import random
 from random import randint
 from kivy.clock import Clock
-from kivy.uix.scatter import Scatter
-from kivy.graphics import *
-from kivy.core.text import FontContextManager as FCM
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -69,13 +63,16 @@ class CircularButtonC(ButtonBehavior, Label):
 
 class Inicio(Screen):
     topicos = '''    -Sangue
-    -Fatores
+    -Mecanismos
     -Vitamina K
     -Genética
     -Sintomas e Exames
     -Aspectos Sociais
     
     '''
+    def sobeteclado(self, coisa):
+        coisa.text = ""
+        coisa.pos_hint = {"top": 0.6}
     def on_pre_enter(self, *args):
         Clock.schedule_interval(self.apagar, 3)
         self.ids.texto.text = "senha"
@@ -86,8 +83,9 @@ class Inicio(Screen):
         anim = Animation(opacity=0.2, duration= 1.5)
         anim.start(self.ids.pedesenha)
         Clock.schedule_once(self.acender, 1.5)
-    def validar(self):
-        if self.ids.texto.text == "apres":
+    def validar(self, coisa):
+        coisa.pos_hint = {"top": 0.3}
+        if self.ids.texto.text.lower() == "sesamo" or self.ids.texto.text.lower() == "sésamo":
             sm.current = 'm_lvl'
 
         self.ids.texto.text = ""
@@ -95,7 +93,7 @@ class Inicio(Screen):
 
 
 class Menu_level(Screen):
-    l = ["", "Sangue", "Fatores", "Vitamina K", "Genética", "Sintomas e Exames", "Aspectos Sociais"]
+    l = ["", "Sangue", "Mecanismos", "Vitamina K", "Genética", "Sintomas e Exames", "Aspectos Sociais"]
     s = ["", "plaquetas"]
 
     def limpa1(self):
@@ -115,6 +113,8 @@ class Menu_level(Screen):
                 self.ids.fltexto.add_widget(self.ids.bttexto)
             self.ids.temalvl.text = self.l[int(qual.text)]
         self.ids.tudo.add_widget(self.ids.menulevels)
+
+
     def validar(self):
         if self.ids.texto.text.lower() == "trombina" and self.ids.txtlvl.text == "Level 2":
             sm.current = 'rafa'
@@ -294,6 +294,7 @@ class Victor(Screen):
         self.score = 0
         self.perdeu = False
         self.tempo = 15
+        self.ids.cronometro.opacity= 1
         Clock.schedule_interval(self.countdown, 1)
         self.ids.tudo.remove_widget(self.ids.fim_level)
         self.ids.tudo.remove_widget(self.ids.fim_tempo)
@@ -326,6 +327,8 @@ class Victor(Screen):
         if self.score == 1:
             self.ids.marcacao.text = "2/2"
         elif self.score == 2:
+            self.tempo = 10000
+            self.ids.cronometro.opacity= 0
             self.ids.letra.text = letras("TROMBINA")
             self.ids.tudo.add_widget(self.ids.fim_level)
             for button in self.ids.botoes.children:
@@ -408,6 +411,11 @@ class Carlos(Screen):
                       "pelas vias linfáticas", True],
                      ["O ciclo da vitamina K ocorre\nsomente no fígado", False],
                      ["O resultado líquido do ciclo é\na conversão da epoxi-vitamina\nK em hidroquinona", True]]
+    def tirarampa(self, *args):
+        try:
+            self.ids.tudo.remove_widget(self.ids.tampa)
+        except:
+            pass
     def prox_frase(self, seconds=0):
         if self.l[0][1]:
             self.ultima_resposta = True
@@ -416,6 +424,7 @@ class Carlos(Screen):
         self.ids.frase.text = self.l[0][0]
         self.l.remove(self.l[0])
     def renovar(self):
+        Clock.schedule_once(self.tirarampa, 1.1)
         Animation.cancel_all(self.ids.tempo)
         animFim = Animation(size_hint=(1.99, 0.065),background_color=(0.25,1,0.25,1), duration=1)
         if 3 > self.score > 0:
@@ -447,21 +456,24 @@ class Carlos(Screen):
         anim.start(self.ids.tempo)
         Clock.schedule_once(self.perdeu, 10.1)
     def start(self):
+        self.tirarampa()
         self.ultima_resposta = ""
         self.score = 0
         self.ids.contador.size_hint = (0.04, 0.065)
         self.ids.tempo.size_hint = (1.99, 0.065)
+        self.ids.tempo.background_color = 0.25,1,0.25,1
         self.l = sample(self.l_inicial, len(self.l_inicial))
         self.prox_frase()
         Clock.schedule_once(self.time, 2)
     def checar(self, resposta):
+        self.ids.tudo.add_widget(self.ids.tampa)
         if resposta == self.ultima_resposta:
             self.score += 1
             self.renovar()
         else:
-            if self.l[0][1]:
+            if self.ultima_resposta:
                 self.ids.resposta.text = "Verdadeiro"
-            elif not self.l[0][1]:
+            elif not self.ultima_resposta:
                 self.ids.resposta.text = "Falso"
             Animation.cancel_all(self.ids.tempo)
             self.ids.motivo.text = "Resposta Incorreta"
@@ -525,7 +537,7 @@ class Dago(Screen):
             Clock.schedule_once(self._clear2, 0.9)
             Clock.schedule_once(self._start3, 1.9)
         elif nmr == 3:
-            self.ids.letra.text = letras("EQUIMOSE")
+            self.ids.letra.text = letras("ECOGRAFIA")
             self.ids.tudo.add_widget(self.ids.fim_level)
 
     def erro(self, botao):
@@ -654,9 +666,32 @@ class Teoria(Screen):
 
 class Menu_teoria(Screen):
     dic = {
-        "Aspectos Sociais": '''       Embora a hemofilia seja uma doença sem cura, com o tratamento adequado e o autocuidado, a maioria das pessoas pode manter um estilo de vida ativo e produtivo. Esse tratamento é feito com a reposição intravenosa do concentrado do fator deficiente dependendo da variedade da hemofilia( tipo A usa-se o fator o fator VIII e B o fator IX). Essa reposição é disponibilizada pelo SUS, geralmente em centros especializados, ou  pode ser feita em casa, e o HEMOPE disponibiliza esse curso para aplicação dos fatores coagulantes.
+        "Aspectos Sociais": '''       Embora a hemofilia seja uma doença sem cura, com o tratamento adequado e o autocuidado, a maioria das pessoas pode manter um estilo de vida ativo e produtivo. Esse tratamento é feito com a reposição intravenosa do concentrado do fator deficiente dependendo da variedade da hemofilia( tipo A usa-se o fator VIII e B o fator IX). Essa reposição é disponibilizada pelo SUS, geralmente em centros especializados, ou  pode ser feita em casa, e o HEMOPE disponibiliza esse curso para aplicação dos fatores coagulantes.
         É bastante comum o relato de crianças e adolescentes hemofílicos queixando-se de existir uma sensação  de exclusão dos demais. Pois, algumas atividades bastante comuns nessa idade como jogar futebol, basquete e qualquer brincadeira que exige muito contato físico, são desaconselhadas. Muitos deles relataram não revelar para os amigos que são hemofílicos com medo de haver uma exclusão maior ainda, muito também por conta da desinformação sobre a doença. Esse cenário pode causar uma maior tendência a desenvolver sintomas de doenças psicológicas como a depressão.
         Por conta disso é fundamental acompanhamento psicológico desses indivíduos, até porque também foi recorrente entre os entrevistados a desmotivação no tratamento da hemofilia, pois já que é uma doença que não tem cura, mas sim atenua-se as complicações, eles não vêem perspectiva no tratamento e não querem passar pelo desconforto das infusões dos fatores coagulantes frequentes. Por isso é fundamental um bom acompanhamento médico para instruir os pais e os jovens sobre a importância do tratamento regular para amenizar os desconfortos provocados pela doença, para que se sintam seguros em aplicar os fatores de coagulação em casa e para que os pacientes possam conciliar a doença sem que afete drasticamente o convívio social.
+        
+        ''',
+        "Mecanismos": '''A coagulação sanguínea consiste na conversão de uma proteína solúvel do plasma, o fibrinogênio, em um polímero insolúvel, a fibrina, por ação de uma enzima denominada trombina. A fibrina forma uma rede de fibras elásticas que consolida o tampão plaquetário e o transforma em tampão hemostático. A coagulação é uma série de reações químicas entre várias proteínas que convertem pró-enzimas em enzimas. Essas pró-enzimas e enzimas são denominadas fatores de coagulação. A ativação destes fatores é iniciada pelo endotélio ativado e finalizado na superfície das plaquetas ativadas e tem como produto a formação de trombina que promoverá modificações na molécula de fibrinogênio, liberando monômeros de fibrina na circulação. Esses monômeros vão unir suas terminações e formar um polímero solúvel (fibrina S) que, sob a ação do fator XIIIa (fator XIII ativado pela trombina) e íons cálcio, produz a base de fibras que mantêm o agregado de plaquetas previamente formado. No modelo de cascata de ativação, cada fator da coagulação leva a ativação de outro fator até a eventual formação da trombina. Esses fatores são numerados de I ao XIII, com seus respectivos sinônimos. O número correspondente para cada fator foi designado considerando a ordem de sua descoberta. Ainda sobre o modelo cascata da coagulação, ele pode ser dividido em duas vias: a via intrínseca na qual todos os componentes estão presentes no sangue e na via extrínseca na qual é necessária a presença da proteína da membrana celular subendotelial, o fator tecidual (TF). Apesar das duas vias serem diferentes, existem processos comuns da coagulação (via final comum), que é são a ativação do fator X sendo convertido em Xa, a conversão de trombina a partir da protrombina pela ação do fator Xa, formação de fibrina estimulada pela trombina e estabilização da fibrina pelo fator XIIIa. A coagulação, pela via intrínseca, é desencadeada quando o fator XII e ativado pelo contato com o colágeno endotelial. Além do fator XII, estão envolvidos neste processo o fator XI, a pré-calicreína e o cininogênio de alto peso molecular (HMWK = high molecular weight kinogen). Nesse sentido, tanto o fator XI quanto a pré-calicreína necessitam da HMWK para efetuar a adsorção à superfície em que está ligado o fator XIIa. Do resultado desses processos ocorre a ativação do fator XI, que transforma o fator IX em IXa. O fator IXa e o fator VIIa associam-se à superfície de fosfolipídio através de uma "ponte" de cálcio estimulando a conversão de fator X para Xa. De maneira mais simplificada, na via extrínseca, a cascata é desencadeada quando os tecidos lesados liberam o fator tecidual (tromboplastina tecidual), que forma um complexo com o fator VII, mediado por íons cálcio. Este complexo age sobre o fator X estimulando sua conversão em Xa. Explicado tudo isso, as duas vias encontram um caminho comum em que ocorre a conversão de protrombina em trombina que, por sua vez, estimula a transformação de fibrinogênio em fibrina.
+        
+        ''',
+        "Vitamina K": '''       Uma importante coenzima envolvida no processo de coagulação sanguínea é a vitamina K, ela é encontrada em quatro formas: Filoquinona (vitamina K1) que é a forma predominante, presente principalmente em óleos vegetais e hortaliças; Menaquinona (vitamina K2), presente em produtos animais e alimentos fermentados; Menadiona (vitamina K3) que é um composto sintético; Dihidrofiloquinona (dK), formada durante a hidrogenação comercial de óleos vegetais.
+        A vitamina K atua como cofator para a carboxilação de resíduos específicos de ácido glutâmico para formar o ácido gama carboxiglutâmico (Gla), aminoácido presente nos fatores de coagulação (fatores II, VII, IX e X). A carboxilação capacita as proteínas de coagulação a se ligarem ao cálcio, permitindo assim a interação com os fosfolipídios das membranas de plaquetas e células endoteliais, o que, por sua vez, possibilita o processo de coagulação sanguínea normal.
+        Em essência, o ciclo de vitamina K, pode ser considerado uma via de recuperação da vitamina, presente em quantidades nanomolares no fígado e em outros tecidos.
+        Ao alcançar o fígado, a filoquinona é reduzida a hidronaftoquinona (KH2), que é o cofator ativo para a carboxilase . O fígado tem um papel exclusivo na transformação metabólica que leva à excreção da vitamina K do organismo. A deficiência de vitamina K diminui os níveis de protrombina e outros fatores de coagulação dependentes de vitamina K, causando coagulação defeituosa e, potencialmente, sangramento. É importante entender também que a  vitamina K1 (filoquinona) não é tóxica quando consumida via oral, mesmo em grandes quantidades. Entretanto, a menadiona (precursor sintético de vitamina K solúvel em água) pode causar toxicidade e não deve ser utilizada para tratar a deficiência de vitamina K.
+        
+        ''',
+        "Sintomas e Exames": '''        As manifestações clínicas da hemofilia são bastantes e ocorrem em diferentes intensidades, desde pequenos hematomas até sangramentos espontâneos e sem causa aparente. 
+        Dessa forma, o indivíduo pode ter sua hemofilia classificada em leve, moderada ou grave, a depender da quantidade de fator VIII ou IX presente no sangue.
+        A leve apresenta sintomas mais brandos e sua manifestação é mais perceptível em cirurgias e cortes, casos em que a cicatrização é mais demorada.
+        A moderada já é mais evidente, uma vez que hematomas já são mais frequentes e demoram mais a cicatrizar, além de relato de sangramentos articulares na criança e, por consequência, falta de mobilidade. Nos casos graves, sangramentos espontâneos são semanais e acompanham outras manifestações.
+        Para realização do diagnóstico, é considerada a história clínica do paciente e são feitos exames como coagulograma, no qual é examinado o tempo de tromblopastina parcial ativada (TTPa), que podem ser complementados com a dosagem do fator VIII ou IX
+        Por fim, deve-se considerar também o período gestacional de mães portadoras do gene da hemofilia, nesses casos, é importante determinar o sexo do feto o mais cedo possível, para que haja um tratamento adequado em caso de suspeita da doença. Para identificar o sexo, podem ser feitos exames de amniocentese ou de identificação de DNA livre.
+        
+        ''',
+        "Sangue": '''As plaquetas, foco desse estudo, são elementos figurados do sangue, assim como as hemácias e os leucócitos. Diferentemente dos demais elementos, as plaquetas não são células, elas são fragmentos citoplasmáticos anucleados que apresentam forma discóide quando circulam no sangue e esférica ao desempenhar sua função na hemostasia. Originam-se da fragmentação dos pseudópodes dos megacariócitos, num processo denominado trombopoiese . Pode-se dividir a estrutura das plaquetas em 4 zonas. A primeira é denominada zona periférica, abrange membrana plasmática trilaminar externa e interna, além  de um sistema de canais conectado à superfície chamado de sistema canicular aberto. A segunda se denomina zona sol-gel, composta pelo citoesqueleto(fornece a sustentação) e sistema contrátil. A terceira é chamada zona de organelas e apresenta os grânulos alfa, grânulos densos e componentes celulares. A última zona se chama sistema membranar, na qual se situam o sistema tubular denso, que concentra cálcio, importante para desencadear os eventos contráteis, e os sistemas enzimáticos, envolvidos na síntese de prostaglandinas.
+        
+        ''',
+        "Genetica": '''A hemofilia é caracterizada como uma coagulopatia hereditária, recessiva e ligada ao cromossomo X em que há uma deficiência de fatores da coagulação sanguínea responsáveis pela via intrínseca. Seguindo esse contexto, o homem é hemizigoto para a doença e é nele que a grande maioria dos casos ocorre, pois na mulher é preciso que os 2 genes mutantes estejam presentes para expressar a doença. Existem 2 tipos da doença: o tipo A (80% dos casos) é decorrente da deficiência do fator VIII da coagulação, enquanto que no tipo B (20% dos casos) a deficiência é do fator IX. Apesar das causas da doença serem majoritariamente genéticas, a destruição dos fatores por aloanticorpos ou o câncer podem originar formas alternativas dela. No tipo A há uma mutação do gene F8(composto por 26 éxons e 25 íntrons), localizado na posição Xq28, sendo que em 50% dos casos graves ocorre uma inversão do íntron 22. Já no tipo B, há mutações do gene F9(composto por 9 éxons), de forma que 90% dessas mutações são do tipo pontual. Em uma última análise, a hemofilia pode ser causada por mutações de novo nesses genes, que caracterizam casos esporádicos e não hereditários.
         
         '''
 
@@ -671,7 +706,8 @@ class Menu_teoria(Screen):
 
 
 
-sm.add_widget(GameOver(name='go'))
+
+
 sm.add_widget(Inicio(name='inicio'))
 sm.add_widget(Menu_level(name='m_lvl'))
 sm.add_widget(Teoria(name='teoria'))
@@ -683,6 +719,7 @@ sm.add_widget(Dago(name='dago'))
 sm.add_widget(Alex(name='alex'))
 sm.add_widget(Cortez(name='cortez'))
 sm.add_widget(Game(name='game'))
+sm.add_widget(GameOver(name='go'))
 
 
 class MyMainApp(App):
